@@ -14,7 +14,7 @@ const todayWord = getTodaysWord();
 const gameSessions: Record<string, string[]> = {};
 
 router.post("/guess", authenticate, async (req: Request, res: Response) => {
-  const email = req.body.userEmail;
+  const email = req.user?.email;
   const { guess } = req.body;
   const todayWord = getTodaysWord();
   const today = new Date().toISOString().split("T")[0];
@@ -89,6 +89,70 @@ router.post("/guess", authenticate, async (req: Request, res: Response) => {
     message: isCorrect ? "🎉 You got it!" : "❌ Not quite, try again!",
   });
 });
+
+
+router.get("/summary", authenticate, async (req: Request, res: Response) => {
+  const email = req.user?.email;
+  const today = new Date().toISOString().split("T")[0];
+  const todayWord = getTodaysWord();
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return res.status(404).json({ error: "User not found." });
+
+  const todayStart = new Date(today + "T00:00:00.000Z");
+
+  const guesses = await prisma.guess.findMany({
+    where: {
+      userId: user.id,
+      createdAt: { gte: todayStart },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  // Generate emoji summary (basic logic)
+  const summary = guesses.map((g) => {
+    if (g.word === todayWord) return "🟩";
+    if (g.word.length === todayWord.length) return "🟨";
+    return "⬛";
+  }).join("");
+
+  const resultText = `Cluely ${summary.length}/5\n${summary}`;
+
+  return res.json({
+    guesses: guesses.map((g) => g.word),
+    result: resultText,
+    correct: guesses.some((g) => g.word === todayWord),
+    attempts: guesses.length,
+    streak: user.streak,
+  });
+});
+
+
+router.get("/leaderboard", async (req: Request, res: Response) => {
+  const topUsers = await prisma.user.findMany({
+    orderBy: { streak: "desc" },
+    take: 10,
+    select: {
+      email: true,
+      streak: true,
+    },
+  });
+
+  const leaderboard = topUsers.map((user, index) => ({
+    rank: index + 1,
+    email: maskEmail(user.email),
+    streak: user.streak,
+  }));
+
+  res.json({ leaderboard });
+});
+
+// Helper to mask email (privacy)
+function maskEmail(email: string) {
+  const [name, domain] = email.split("@");
+  return name[0] + "***@" + domain;
+}
+
 
 
 export default router;
