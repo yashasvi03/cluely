@@ -7,16 +7,13 @@ import { prisma } from "../utils/prisma";
 
 const router = Router();
 
-// Get today's word from Wordlist
-const todayWord = getTodaysWord(); 
-
 // Basic IP-based session store
 const gameSessions: Record<string, string[]> = {};
 
 router.post("/guess", authenticate, async (req: Request, res: Response) => {
   const email = req.user?.email;
   const { guess } = req.body;
-  const todayWord = getTodaysWord();
+  const todayWord = await getTodaysWord();
   const today = new Date().toISOString().split("T")[0];
 
   if (!guess || typeof guess !== "string") {
@@ -87,6 +84,7 @@ router.post("/guess", authenticate, async (req: Request, res: Response) => {
     clue,
     streak: updatedUser.streak,
     message: isCorrect ? "🎉 You got it!" : "❌ Not quite, try again!",
+    ...( !isCorrect && guessCount + 1 >= 5 ? { answer: todayWord } : {} )
   });
 });
 
@@ -94,7 +92,7 @@ router.post("/guess", authenticate, async (req: Request, res: Response) => {
 router.get("/summary", authenticate, async (req: Request, res: Response) => {
   const email = req.user?.email;
   const today = new Date().toISOString().split("T")[0];
-  const todayWord = getTodaysWord();
+  const todayWord = await getTodaysWord();
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return res.status(404).json({ error: "User not found." });

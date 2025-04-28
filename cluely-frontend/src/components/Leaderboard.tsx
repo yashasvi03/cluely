@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 type LeaderboardEntry = {
   rank: number;
@@ -9,47 +10,35 @@ type LeaderboardEntry = {
 
 export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/api/leaderboard");
-        setEntries(res.data.leaderboard);
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch leaderboard", err);
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
+    axios
+      .get("http://localhost:3000/api/leaderboard")
+      .then((res) => setEntries(res.data.leaderboard))
+      .catch(() => {});
   }, []);
 
-  if (loading) return <p className="text-center">Loading leaderboard...</p>;
-
   return (
-    <div className="bg-white rounded-lg p-4 shadow max-w-xl mx-auto text-center mt-6 space-y-4">
-      <h2 className="text-xl font-bold">🏆 Leaderboard</h2>
-
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr>
-            <th className="p-2 border-b">Rank</th>
-            <th className="p-2 border-b">Player</th>
-            <th className="p-2 border-b text-right">Streak 🔥</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Card className="shadow border border-purple-300 dark:border-purple-600">
+      <CardHeader>
+        <CardTitle className="text-center text-lg">🏆 Top Streaks</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-2">
           {entries.map((entry) => (
-            <tr key={entry.rank} className="hover:bg-purple-50 transition">
-              <td className="p-2">{entry.rank}</td>
-              <td className="p-2">{entry.email}</td>
-              <td className="p-2 text-right">{entry.streak}</td>
-            </tr>
+            <li
+              key={entry.rank}
+              className="flex justify-between items-center text-sm border-b pb-1 border-gray-200 dark:border-gray-700"
+            >
+              <span className="font-mono w-5 text-gray-500">{entry.rank}</span>
+              <span className="truncate">{entry.email}</span>
+              <span className="text-purple-700 dark:text-purple-300 font-semibold">
+                🔥 {entry.streak}
+              </span>
+            </li>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </ul>
+      </CardContent>
+    </Card>
   );
 }

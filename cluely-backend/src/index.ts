@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import gameRoutes from "./routes/gameRoutes";
 import authRoutes from "./routes/authRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 const app = express();
 const PORT = 3000;
@@ -14,10 +15,13 @@ app.use(cors({
   credentials: true // just in case you handle cookies later
 }));
 
-app.use('/api/auth', authRoutes); // ✅ This is correct — authRoutes is a Router, not a function
 
-// ✅ This is correct — gameRoutes is a Router, not a function
+
 app.use("/api", gameRoutes);
+
+app.use('/api/auth', authRoutes);  // ✅ This is correct — authRoutes is a Router, not a function
+
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to Cluely! 🧠");

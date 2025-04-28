@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { toast } from "sonner";
 
 type Props = {
   token: string;
@@ -19,37 +23,68 @@ export default function Summary({ token }: Props) {
 
   useEffect(() => {
     const fetchSummary = async () => {
-      const res = await axios.get("http://localhost:3000/api/summary", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSummary(res.data);
+      try {
+        const res = await axios.get("http://localhost:3000/api/summary", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSummary(res.data);
+      } catch (err) {
+        toast.error("Failed to fetch game summary.");
+      }
     };
 
     fetchSummary();
   }, [token]);
 
-  const copyToClipboard = () => {
+  const handleCopy = () => {
     if (summary) {
       navigator.clipboard.writeText(summary.result);
+      toast.success("Copied to clipboard!", {
+        description: "Your Cluely result is ready to share.",
+      });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  if (!summary) return <p className="text-center">Loading summary...</p>;
+  if (!summary) return <p className="text-center text-gray-500">Loading summary...</p>;
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow max-w-xl mx-auto text-center mt-4 space-y-4">
-      <h2 className="text-xl font-bold">🧾 Your Cluely Summary</h2>
-      <p className="text-2xl animate-pulse">{summary.result}</p>
-      <p className="text-sm text-gray-500">Streak: {summary.streak}</p>
+    <motion.div
+      className="max-w-xl mx-auto py-10"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <Card className="border border-purple-300 dark:border-purple-600 shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl text-purple-700 dark:text-purple-300">
+            🧾 Cluely Summary
+          </CardTitle>
+        </CardHeader>
 
-      <button
-        onClick={copyToClipboard}
-        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-      >
-        {copied ? "✅ Copied!" : "📤 Share Result"}
-      </button>
-    </div>
+        <CardContent className="space-y-4 text-center">
+          <p className="text-3xl font-mono animate-pulse">{summary.result}</p>
+
+          <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            <p>
+              Attempts:{" "}
+              <span className="font-semibold text-purple-700 dark:text-purple-300">
+                {summary.attempts}
+              </span>
+            </p>
+            <p>
+              Streak:{" "}
+              <span className="font-semibold text-green-600 dark:text-green-300">
+                {summary.streak}
+              </span>
+            </p>
+          </div>
+
+          <Button onClick={handleCopy} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+            📤 Share My Result
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

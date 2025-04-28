@@ -30,3 +30,9 @@ model Guess {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model DailyWord {
+  id        String   @id @default(uuid())
+  date      DateTime @unique
+  word      String
+  createdAt DateTime @default(now())
+}
